@@ -1,11 +1,16 @@
 import os
+<<<<<<< HEAD
 import sqlite3
 import subprocess
 
 from flask import Flask, jsonify, request
+=======
 
-app = Flask(__name__)
+from flask import Flask, jsonify
+>>>>>>> a1cf47b (update app to be not vulnerable)
 
+
+<<<<<<< HEAD
 # VULNERABILITY 1: Hardcoded secret
 API_SECRET = "lab_test_secret_123456789"
 
@@ -89,3 +94,71 @@ if __name__ == "__main__":
         port=5000,
         debug=True
     )
+=======
+def create_app():
+    app = Flask(__name__)
+
+    # Application configuration
+    app.config.update(
+        DEBUG=False,
+        TESTING=False,
+        MAX_CONTENT_LENGTH=16 * 1024,
+        TRUSTED_HOSTS=os.getenv(
+            "TRUSTED_HOSTS",
+            "localhost,127.0.0.1"
+        ).split(","),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+    )
+
+    # Security headers
+    @app.after_request
+    def security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'none'"
+        )
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=()"
+        )
+
+        return response
+
+    # Homepage
+    @app.route("/", methods=["GET"])
+    def home():
+        return jsonify({
+            "application": "Secure Flask Demo",
+            "status": "running",
+            "message": "Welcome to the secure application."
+        })
+
+    # Health endpoint
+    @app.route("/health", methods=["GET"])
+    def health():
+        return jsonify({
+            "status": "healthy"
+        }), 200
+
+    # Generic error handling
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({
+            "error": "Resource not found"
+        }), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        return jsonify({
+            "error": "Internal server error"
+        }), 500
+
+    return app
+
+
+app = create_app()
+>>>>>>> a1cf47b (update app to be not vulnerable)
