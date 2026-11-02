@@ -31,11 +31,15 @@ jobs:
 
       # 4. Install Trivy
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.33.1
+        uses: aquasecurity/setup-trivy@v0.3.1
         with:
-          version: v0.65.0
+          version: v0.76.1
 
-      # 5. Scan Docker image
+      # 5. Verify Trivy installation
+      - name: Verify Trivy installation
+        run: trivy --version
+
+      # 6. Scan Docker image
       - name: Scan Docker image
         run: |
           trivy image \
@@ -43,4 +47,3 @@ jobs:
             --severity CRITICAL \
             --exit-code 1 \
             devsecops-handover:latest
-
