@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build-and-scan:
-    name: Build and Scan Docker Image
+    name: Build, Verify and Scan Docker Image
     runs-on: ubuntu-latest
 
     steps:
@@ -28,22 +28,47 @@ jobs:
           push: false
           load: true
           tags: devsecops-handover:latest
+          no-cache: true
 
-      # 4. Install Trivy
+      # 4. Verify certifi version
+      - name: Verify certifi version
+        run: |
+          docker run --rm devsecops-handover:latest \
+            python -c "import certifi; print('Certifi version:', certifi.__version__)"
+
+      # 5. Install Trivy
       - name: Install Trivy
         uses: aquasecurity/setup-trivy@v0.3.1
         with:
           version: v0.76.1
 
-      # 5. Verify Trivy installation
+      # 6. Verify Trivy installation
       - name: Verify Trivy installation
         run: trivy --version
 
-      # 6. Scan Docker image
-      - name: Scan Docker image
+      # 7. Scan Docker image
+      - name: Trivy vulnerability scan
         run: |
           trivy image \
             --ignore-unfixed \
             --severity CRITICAL \
             --exit-code 1 \
             devsecops-handover:latest
+
+      # 8. Generate SBOM
+      - name: Generate SBOM
+        if: always()
+        run: |
+          trivy image \
+            --format cyclonedx \
+            --output sbom.json \
+            devsecops-handover:latest
+
+      # 9. Upload SBOM artifact
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-sbom
+          path: sbom.json
+          if-no-files-found: warn
